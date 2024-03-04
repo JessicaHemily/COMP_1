@@ -1,0 +1,33 @@
+---
+title: "Trabalho Final"
+author: "Jessica"
+date: "2024-03-04"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Pacotes
+```{r message=FALSE, warning=FALSE}
+library(psych)
+library(summarytools)
+library(performance)
+library(MASS)
+library(dplyr)
+library(rstatix)
+library(lmtest)
+library(car)
+library(ggpubr)
+```
+
+### Base de dados a ser analisada
+```{r}
+
+columbia <- read.csv('', 
+				  header = TRUE,
+				  sep = ',')
+
+head(columbia)
+```
