@@ -36,6 +36,7 @@ head(df)
 
 ```{r}
 glimpse(df)
+summary(df)
 ```
 
 ### Outliers
@@ -49,7 +50,7 @@ for (coluna in c(3:15)) {
 
 Há poucos outliers na base de dados
 
-### Existem NAs na base?
+### NAs na base?
 
 ```{r}
 
@@ -64,6 +65,58 @@ linhas_na
 
 cat("A base de dados possui",linhas_df, "observacoes e",linhas_na, "linhas contendo ao menos um NA")
 ```
+### Identificar as variáveis que possuem NAs
+
+```{r}
+
+cbind(colSums(is.na(df)))
+
+```
+### Análide Descritiva
+
+```{r}
+
+
+```
+
+
+
+### Modelo
+
+```{r}
+
+modelo <- lm(High.Job.Creation.Expectation ~ Perceived.opportunities + Perceived.capabilities + Fear.of.failure.rate.. + Entrepreneurial.intentions + Total.early.stage.Entrepreneurial.Activity..TEA. + Established.Business.Ownership + Entrepreneurial.Employee.Activity + Motivational.Index + Female.Male.TEA + Female.Male.Opportunity.Driven.TEA + Innovation + Business.Services.Sector + High.Status.to.Successful.Entrepreneurs + Entrepreneurship.as.a.Good.Career.Choice, data = df)
+  
+```
+```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(modelo)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
