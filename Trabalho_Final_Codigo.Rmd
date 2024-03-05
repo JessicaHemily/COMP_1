@@ -25,9 +25,73 @@ library(ggpubr)
 ### Base de dados a ser analisada
 ```{r}
 
-columbia <- read.csv('', 
+df <- read.csv('https://raw.githubusercontent.com/JessicaHemily/COMP_1/main/AdultPopulationSurvey.csv', 
 				  header = TRUE,
 				  sep = ',')
 
-head(columbia)
+head(df)
 ```
+
+### 1. Compreensão dos dados
+
+```{r}
+glimpse(df)
+```
+
+### Outliers
+
+```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+par(mfrow = c(4,4))
+for (coluna in c(3:15)) {
+  boxplot(df[coluna])
+}
+```
+
+Há poucos outliers na base de dados
+
+### Existem NAs na base?
+
+```{r}
+
+df_na <- df[!complete.cases(df),]
+head(df_na)   
+
+```
+```{r}
+linhas_na <- nrow(df_na)
+linhas_df <- nrow(df)
+linhas_na
+
+cat("A base de dados possui",linhas_df, "observacoes e",linhas_na, "linhas contendo ao menos um NA")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
