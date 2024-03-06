@@ -25,11 +25,17 @@ library(ggpubr)
 ### Base de dados a ser analisada
 ```{r}
 
-df <- read.csv('https://raw.githubusercontent.com/JessicaHemily/COMP_1/main/AdultPopulationSurvey.csv', 
+df <- read.csv('https://raw.githubusercontent.com/JessicaHemily/COMP_1/main/LeukocyteProfiles.csv/LeukocyteProfiles.csv', 
 				  header = TRUE,
 				  sep = ',')
 
 head(df)
+
+df_2 <- df[df$Species == "Calidris temminckii",]
+linha <- nrow(df_2)
+linha
+head(df_2)
+
 ```
 
 ### 1. Compreensão dos dados
@@ -37,13 +43,15 @@ head(df)
 ```{r}
 glimpse(df)
 summary(df)
+
+cbind(table(df$Species))
 ```
 
 ### Outliers
 
 ```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
-par(mfrow = c(4,4))
-for (coluna in c(3:15)) {
+par(mfrow = c(2,4))
+for (coluna in c(2:9)) {
   boxplot(df[coluna])
 }
 ```
@@ -72,20 +80,27 @@ cat("A base de dados possui",linhas_df, "observacoes e",linhas_na, "linhas conte
 cbind(colSums(is.na(df)))
 
 ```
-### Análide Descritiva
+### Cáluculo da média de bodymass para substituição dos valore NAs
 
 ```{r}
-
+media_bm <- mean(df$BodyMass,na.rm = TRUE)
 
 ```
 
+### Substituir os NAs pela média 
+```{r}
+df$BodyMass <- (replace(x = df$BodyMass,
+                               list = is.na(df$BodyMass),
+                               values = media_bm)
+                                )
 
+```
 
 ### Modelo
 
 ```{r}
 
-modelo <- lm(High.Job.Creation.Expectation ~ Perceived.opportunities + Perceived.capabilities + Fear.of.failure.rate.. + Entrepreneurial.intentions + Total.early.stage.Entrepreneurial.Activity..TEA. + Established.Business.Ownership + Entrepreneurial.Employee.Activity + Motivational.Index + Female.Male.TEA + Female.Male.Opportunity.Driven.TEA + Innovation + Business.Services.Sector + High.Status.to.Successful.Entrepreneurs + Entrepreneurship.as.a.Good.Career.Choice, data = df)
+modelo <- lm(FatScore~ BodyMass + Heterophils + Lymphocytes + Eosinophils + Monocytes + Basophils + HLRatio, data = df)
   
 ```
 ```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
@@ -94,7 +109,10 @@ plot(modelo)
 
 ```
 
+```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+pairs.panels(df[-1,])
 
+```
 
 
 
