@@ -161,13 +161,13 @@ modelo <- lm(FatScore~ BodyMass + Heterophils + Lymphocytes + Eosinophils + Mono
   
 ```
 
-```{r fig.align='center', fig.height=10, fig.width=10, message=FALSE, warning=FALSE}
+```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
 par(mfrow = c(2,2))
 plot(modelo)
 
 ```
 
-```{r fig.align='center', fig.height=9, fig.width=9, message=FALSE, warning=FALSE}
+```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
 pairs.panels(df[,-1])
 
 ```
