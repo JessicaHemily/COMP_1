@@ -39,11 +39,12 @@ head(df)
 
 ### 1. Compreensão dos dados
 
-#### Variáveis
+**VARIÁVEIS**
 
 **FatScore:** Escore de gordura que varia de 0 a 8;
 
-![](Fat-score-stages-in-birds-fat-classes-0-to-8-fat-stippled-areas.png)
+<img src="Fat-score-stages-in-birds-fat-classes-0-to-8-fat-stippled-areas.png" width="400" height="450">
+
 
 **BodyMass:** Massa do pássaro;
 
