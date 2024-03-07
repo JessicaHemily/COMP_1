@@ -1,7 +1,7 @@
 ---
 title: "Trabalho Final"
-author: "Jessica"
-date: "2024-03-04"
+author: "Alunas: Daniele ..., Jessica Hemily de Sá Gonçalves, Larissa ..."
+date: "04/03/2024"
 output: html_document
 ---
 
@@ -35,9 +35,38 @@ head(df)
 #linha <- nrow(df_2)
 #linha
 
+
 ```
 
-### 1. Compreensão dos dados
+### O QUE HÁ DE ERRADO NESTE BENDITO CÓDIGO???
+
+df$num_species <- switch(df$Species,
+                         "Actitis hypoleucos" = 1,
+                         "Arenaria interpres" = 2,
+                         "Calidris alpina" = 3,
+                         "Calidris canutus" = 4,
+                         "Calidris ferruginea" = 5,
+                         "Calidris minuta" = 6,
+                         "Calidris temminckii" = 7,
+                         "Charadrius dubius" = 8,
+                         "Charadrius hiaticula" = 9,
+                         "Limicola falcinellus" = 10,
+                         "Limosa lapponica" = 11,
+                         "Philomachus pugnax" = 12,
+                         "Pluvialis squatarola" = 13,
+                         "Tringa erythropus" = 14,
+                         "Tringa glareola" = 15,
+                         "Tringa nebularia" = 16,
+                         "Tringa ochropus" = 17,
+                         "Tringa totanus" = 18,
+                         "Vanellus vanellus" = 19,
+                         NA
+                         )
+
+
+
+
+### **1. Compreensão dos dados**
 
 **VARIÁVEIS**
 
@@ -60,12 +89,14 @@ head(df)
 
 **HLRatio:**
 
+### Resumo dos Dados
+
 ```{r}
 glimpse(df)
 summary(df)
 ```
 
-#### Espécies e número de indíviduos
+### Espécies e número de indíviduos
 ```{r}
 cbind(table(df$Species))
 ```
@@ -104,24 +135,25 @@ cat("A base de dados possui",linhas_df, "observacoes e",linhas_na, "linhas conte
 cbind(colSums(is.na(df)))
 
 ```
-### Cáluculo da média de bodymass para substituição dos valore NAs
+### Cálculo da mediana de bodymass para substituição dos valore NAs
 
 ```{r}
 
-media_bm <- mean(df$BodyMass,na.rm = TRUE)
+median_bm <- median(df$BodyMass,na.rm = TRUE)
+median_bm
 
 ```
 
-### Substituir os NAs pela média 
+### Substituir os NAs pela mediana
 ```{r}
 df$BodyMass <- (replace(x = df$BodyMass,
                                list = is.na(df$BodyMass),
-                               values = media_bm)
+                               values = median_bm)
                                 )
 
 ```
 
-### Modelo
+### **2 Criação do Modelo**
 
 ```{r}
 
@@ -135,7 +167,7 @@ plot(modelo)
 
 ```
 
-```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+```{r fig.align='center', fig.height=10, fig.width=10, message=FALSE, warning=FALSE}
 pairs.panels(df[,-1])
 
 ```
