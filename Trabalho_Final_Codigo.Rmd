@@ -31,28 +31,51 @@ df <- read.csv('https://raw.githubusercontent.com/JessicaHemily/COMP_1/main/Leuk
 
 head(df)
 
-df_2 <- df[df$Species == "Calidris temminckii",]
-linha <- nrow(df_2)
-linha
-head(df_2)
+#df_2 <- df[df$Species == "Calidris temminckii",]
+#linha <- nrow(df_2)
+#linha
 
 ```
 
 ### 1. Compreensão dos dados
 
+#### Variáveis
+
+**FatScore:** Escore de gordura que varia de 0 a 8;
+
+![](Fat-score-stages-in-birds-fat-classes-0-to-8-fat-stippled-areas.png)
+
+**BodyMass:** Massa do pássaro;
+
+**Heterophils:** Heterófilos são fagócitos-chaves fundamentais para a defesa imunológica das aves. Eles se ligam e detectam patógenos invasores através do uso de receptores Toll-like (TLRs), receptores Fc e receptores de complemento;
+
+**Lymphocytes:** Linfócitos são um tipo de leucócito ou glóbulo branco do sangue, responsáveis pelo reconhecimento e destruição de micro-organismos infecciosos como bactériase vírus;
+
+**Eosinophils:** 
+
+**Monocytes:**
+
+**Basophils:**
+
+**HLRatio:**
+
 ```{r}
 glimpse(df)
 summary(df)
+```
 
+#### Espécies e número de indíviduos
+```{r}
 cbind(table(df$Species))
 ```
 
 ### Outliers
 
-```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+```{r fig.align='center', fig.height=10, fig.width=15, message=FALSE, warning=FALSE}
 par(mfrow = c(2,4))
 for (coluna in c(2:9)) {
-  boxplot(df[coluna])
+  variavel <- names(df)[coluna]
+  boxplot(df[coluna],main = variavel)
 }
 ```
 
@@ -83,6 +106,7 @@ cbind(colSums(is.na(df)))
 ### Cáluculo da média de bodymass para substituição dos valore NAs
 
 ```{r}
+
 media_bm <- mean(df$BodyMass,na.rm = TRUE)
 
 ```
@@ -103,6 +127,7 @@ df$BodyMass <- (replace(x = df$BodyMass,
 modelo <- lm(FatScore~ BodyMass + Heterophils + Lymphocytes + Eosinophils + Monocytes + Basophils + HLRatio, data = df)
   
 ```
+
 ```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
 par(mfrow = c(2,2))
 plot(modelo)
@@ -110,10 +135,10 @@ plot(modelo)
 ```
 
 ```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
-pairs.panels(df[-1,])
+pairs.panels(df[,-1])
 
 ```
-
+Há multicolinearidade entre as variáveis "Heterophils" e "Lymphocytis", devido ao r > 0,8 (r = - 0,91).
 
 
 
