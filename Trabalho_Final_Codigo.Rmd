@@ -67,6 +67,8 @@ head(df)
 ```{r}
 glimpse(df)
 summary(df)
+
+boxplot(df$FatScore~df$Species)
 ```
 ### Variável de Interesse
 
@@ -204,6 +206,8 @@ Há multicolinearidade (| r | > 0,8) entre as variáveis:
 
 ### **2 Criação do Modelo**
 
+### 1° Modelo - Poisson
+
 ```{r}
 
 modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df)
@@ -211,13 +215,27 @@ modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Baso
 modelo
 
 ```
+As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
+
 
 ```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
 par(mfrow = c(2,2))
 plot(modelo)
 ```
 
+#### Resíduos
+
 ```{r}
+hist(modelo$residuals)
+
+hnp::hnp(modelo$residuals)
+
+```
+
+#### Procurar por outros modelos
+
+```{r}
+
 step(modelo)
 
 hist(modelo$residuals)
@@ -229,7 +247,8 @@ anova(modelo)
 AIC(modelo)
 
 ```
-
+_______________________________
+### 2° Modelo - Poisson
 
 ```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
 
@@ -243,26 +262,68 @@ plot(modelo_2)
 
 ```{r}
 
+hist(modelo$residuals)
 hnp::hnp(modelo_2$residuals)
 
+```
 
-#aggregate(HLRatio ~ Species, data = df, mean)
+### 3° Modelo -  TESTE NEGATIVE BINOMIAL
+
+```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+
+# Instalando e carregando o pacote MASS
+install.packages("MASS")
+library(MASS)
+
+# Ajustando um modelo de regressão de Negative Binomial
+modelo <- glm.nb(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df)
+
+# Visualizando os resultados
+summary(modelo)
+
+par(mfrow=c(2,2))
+plot(modelo)
+
+```
+
+
+```{r}
+
+hist(modelo$residuals)
+hnp::hnp(modelo_2$residuals)
+
+```
+
+```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+# Carregando o pacote
+library(MASS)
+
+# Ajustando um modelo de Poisson Quase (QPR)
+modelo_qpr <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df, family = quasipoisson())
+
+# Visualizando os resultados
+summary(modelo_qpr)
+
+par(mfrow=c(2,2))
+plot(modelo)
 
 ```
 
 
 
+```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
 
+# Ajustando um modelo de regressão de Poisson
+df <- df[c(-28,-82,-56),]
+modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils , data = df, family = poisson)
 
+# Visualizando os resultados
+summary(modelo)
 
+par(mfrow=c(2,2))
+plot(modelo)
 
-
-
-
-
-
-
-
+```
 
 
 
