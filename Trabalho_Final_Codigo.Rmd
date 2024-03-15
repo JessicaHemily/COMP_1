@@ -20,10 +20,11 @@ library(rstatix)
 library(lmtest)
 library(car)
 library(ggpubr)
+library(hnp)
 ```
 
 ### Base de dados a ser analisada
-```{r}
+```{r }
 
 df <- read.csv('https://raw.githubusercontent.com/JessicaHemily/COMP_1/main/LeukocyteProfiles.csv/LeukocyteProfiles.csv', 
 				  header = TRUE,
@@ -37,34 +38,6 @@ head(df)
 
 
 ```
-
-### O QUE HÁ DE ERRADO NESTE BENDITO CÓDIGO???
-
-df$num_species <- switch(df$Species,
-                         "Actitis hypoleucos" = 1,
-                         "Arenaria interpres" = 2,
-                         "Calidris alpina" = 3,
-                         "Calidris canutus" = 4,
-                         "Calidris ferruginea" = 5,
-                         "Calidris minuta" = 6,
-                         "Calidris temminckii" = 7,
-                         "Charadrius dubius" = 8,
-                         "Charadrius hiaticula" = 9,
-                         "Limicola falcinellus" = 10,
-                         "Limosa lapponica" = 11,
-                         "Philomachus pugnax" = 12,
-                         "Pluvialis squatarola" = 13,
-                         "Tringa erythropus" = 14,
-                         "Tringa glareola" = 15,
-                         "Tringa nebularia" = 16,
-                         "Tringa ochropus" = 17,
-                         "Tringa totanus" = 18,
-                         "Vanellus vanellus" = 19,
-                         NA
-                         )
-
-
-
 
 ### **1. Compreensão dos dados**
 
@@ -95,23 +68,73 @@ df$num_species <- switch(df$Species,
 glimpse(df)
 summary(df)
 ```
+### Variável de Interesse
 
+A variável que se deseja modelar é a FatScore.
+
+```{r}
+
+hist(df$FatScore)
+
+```
+   
 ### Espécies e número de indíviduos
 ```{r}
 cbind(table(df$Species))
 ```
-
 ### Outliers
 
 ```{r fig.align='center', fig.height=10, fig.width=15, message=FALSE, warning=FALSE}
 par(mfrow = c(2,4))
 for (coluna in c(2:9)) {
   variavel <- names(df)[coluna]
-  boxplot(df[coluna],main = variavel)
+  boxplot(df[,coluna],main = variavel)
 }
 ```
 
-Há poucos outliers na base de dados
+Devido as diferentes espécies em estudo, é esperado que haja variabilidade dos dados.
+
+### Levantamente de idéias 
+
+  * A variável resposta é do tipo discreta;
+  * Descartamos a regressão linear lm(), devido a variável resposta não ser contínua;
+  * Talvez seja interessante agregar o gênero da variável "Species" (retirar a espécie da nomenclatura binomial) para a criação do moledo.
+   
+### Criar a variável "Genero" apartir da "Species"
+```{r}
+
+# Função para extrair a primeira palavra de uma string
+extrair_primeira_palavra <- function(string) {
+  palavras <- strsplit(string, " ")[[1]]
+  primeira_palavra <- palavras[1]
+  return(primeira_palavra)
+}
+
+df$Genero <- sapply(df$Species, extrair_primeira_palavra)
+```
+
+   
+### Gener e número de indíviduos
+```{r}
+cbind(table(df$Genero))
+```
+   
+   
+### Outliers
+
+Criação de boxplot por genero
+
+```{r fig.align='center', fig.height=25, fig.width=15, message=FALSE, warning=FALSE}
+
+par(mfrow = c(8,1))
+for (coluna in c(2:9)) {
+  variavel <- names(df)[coluna]
+  boxplot(df[,coluna] ~df[,10],main = variavel)
+}
+
+```
+
+Considerando o tamanho da base de dados, considera-se que haja poucos outliers (**subjetivamente**).
 
 ### NAs na base?
 
@@ -128,6 +151,7 @@ linhas_na
 
 cat("A base de dados possui",linhas_df, "observacoes e",linhas_na, "linhas contendo ao menos um NA")
 ```
+   
 ### Identificar as variáveis que possuem NAs
 
 ```{r}
@@ -135,46 +159,93 @@ cat("A base de dados possui",linhas_df, "observacoes e",linhas_na, "linhas conte
 cbind(colSums(is.na(df)))
 
 ```
+   
 ### Cálculo da mediana de bodymass para substituição dos valore NAs
 
 ```{r}
 
-median_bm <- median(df$BodyMass,na.rm = TRUE)
-median_bm
+#median_bm <- median(df$BodyMass,by(df$Species_2),na.rm = TRUE)
+#median_bm
+
+# Função para substituir os valores NA pela mediana, agrupada pela espécie
+substituir_na_pela_mediana <- function(valor) {
+  mediana <- median(valor, na.rm = TRUE)
+  valor[is.na(valor)] <- mediana
+  return(valor)
+}
 
 ```
 
 ### Substituir os NAs pela mediana
 ```{r}
-df$BodyMass <- (replace(x = df$BodyMass,
-                               list = is.na(df$BodyMass),
-                               values = median_bm)
-                                )
+#df$BodyMass <- (replace(x = df$BodyMass,
+ #                              list = is.na(df$BodyMass),
+  #                             values = median_bm)
+   #                             )
+
+df$BodyMass <- ave(df$BodyMass, df$Genero, FUN = substituir_na_pela_mediana)
 
 ```
 
-### **2 Criação do Modelo**
-
-```{r}
-
-modelo <- lm(FatScore~ BodyMass + Heterophils + Lymphocytes + Eosinophils + Monocytes + Basophils + HLRatio, data = df)
-  
-```
-
-```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
-par(mfrow = c(2,2))
-plot(modelo)
-
-```
+### Há multicolinearidade entre as variáveis preditoras?
 
 ```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
 pairs.panels(df[,-1])
 
 ```
+
 Há multicolinearidade entre as variáveis "Heterophils" e "Lymphocytis", devido ao r > 0,8 (r = - 0,91).
 
+### **2 Criação do Modelo**
+
+```{r}
+
+modelo <- glm(FatScore ~ HLRatio + BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df)
+  
+modelo
+
+```
+
+```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(modelo)
+```
+
+```{r}
+step(modelo)
+
+hist(modelo$residuals)
+
+summary(modelo)
+
+anova(modelo)
+
+AIC(modelo)
+
+```
+```{r}
+
+modelo_2 <- glm(formula = FatScore ~ HLRatio + Heterophils + Monocytes + 
+    Genero, data = df)
+
+par(mfrow=c(2,2))
+plot(modelo_2)
+
+```
 
 
+
+
+
+
+```{r}
+
+hnp::hnp(modelo_2$residuals)
+
+
+#aggregate(HLRatio ~ Species, data = df, mean)
+
+```
 
 
 
