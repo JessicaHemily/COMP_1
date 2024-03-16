@@ -238,13 +238,13 @@ hnp::hnp(modelo$residuals)
 
 step(modelo)
 
-hist(modelo$residuals)
+#hist(modelo$residuals)
 
-summary(modelo)
+#summary(modelo)
 
-anova(modelo)
+#anova(modelo)
 
-AIC(modelo)
+#AIC(modelo)
 
 ```
 _______________________________
@@ -252,10 +252,10 @@ _______________________________
 
 ```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
 
-modelo_2 <- glm(formula = FatScore ~ Monocytes + Genero, data = df)
+modelo <- glm(formula = FatScore ~ Monocytes + Genero, data = df)
 
 par(mfrow=c(2,2))
-plot(modelo_2)
+plot(modelo)
 
 ```
 
@@ -263,11 +263,33 @@ plot(modelo_2)
 ```{r}
 
 hist(modelo$residuals)
-hnp::hnp(modelo_2$residuals)
+hnp::hnp(modelo$residuals)
+
+```
+   
+### 3° Modelo - Poisson
+```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+
+# Ajustando um modelo de regressão de Poisson
+#df <- df[c(-28,-82,-56),]
+modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils , data = df, family = poisson)
+
+# Visualizando os resultados
+summary(modelo)
+
+par(mfrow=c(2,2))
+plot(modelo)
 
 ```
 
-### 3° Modelo -  TESTE NEGATIVE BINOMIAL
+```{r}
+
+hist(modelo$residuals)
+hnp::hnp(modelo$residuals)
+
+```
+
+### 4° Modelo -  TESTE NEGATIVE BINOMIAL
 
 ```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
 
@@ -286,36 +308,17 @@ plot(modelo)
 
 ```
 
-
 ```{r}
 
 hist(modelo$residuals)
-hnp::hnp(modelo_2$residuals)
+hnp::hnp(modelo$residuals)
 
 ```
-
+### 5° Modelo - Ajustando um Modelo de Regressão de Poisson Quase (QPR):
 ```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
-# Carregando o pacote
-library(MASS)
 
 # Ajustando um modelo de Poisson Quase (QPR)
-modelo_qpr <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df, family = quasipoisson())
-
-# Visualizando os resultados
-summary(modelo_qpr)
-
-par(mfrow=c(2,2))
-plot(modelo)
-
-```
-
-
-
-```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
-
-# Ajustando um modelo de regressão de Poisson
-df <- df[c(-28,-82,-56),]
-modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils , data = df, family = poisson)
+modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df, family = quasipoisson())
 
 # Visualizando os resultados
 summary(modelo)
@@ -325,9 +328,38 @@ plot(modelo)
 
 ```
 
+```{r}
+
+hist(modelo$residuals)
+hnp::hnp(modelo$residuals)
+
+```
 
 
+### 6° Modelo - Geométrica
+```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
 
+# Carregando o pacote
+#library(MASS)
+
+# Ajustando um modelo de regressão geométrica
+# Adicionando um pseudocount aos valores zero
+df$FatScore <- ifelse(df$FatScore == 0, 1, df$FatScore)
+
+# Ajustando um modelo de regressão geométrica com ligação exponencial
+modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils, data = df, family = Gamma(link = "log"))
+
+par(mfrow=c(2,2))
+plot(modelo)
+
+```
+
+```{r}
+
+hist(modelo$residuals)
+hnp::hnp(modelo$residuals)
+
+```
 
 
 
