@@ -5,10 +5,6 @@ date: "04/03/2024"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ### Pacotes
 ```{r message=FALSE, warning=FALSE}
 library(psych)
@@ -21,6 +17,7 @@ library(lmtest)
 library(car)
 library(ggpubr)
 library(hnp)
+library(nnet)
 ```
 
 ### Base de dados a ser analisada
@@ -47,32 +44,44 @@ head(df)
 
 <img src="Fat-score-stages-in-birds-fat-classes-0-to-8-fat-stippled-areas.png" width="400" height="450">
 
-
 **BodyMass:** Massa do pássaro;
 
 **Heterophils:** Heterófilos são fagócitos-chaves fundamentais para a defesa imunológica das aves. Eles se ligam e detectam patógenos invasores através do uso de receptores Toll-like (TLRs), receptores Fc e receptores de complemento;
 
 **Lymphocytes:** Linfócitos são um tipo de leucócito ou glóbulo branco do sangue, responsáveis pelo reconhecimento e destruição de micro-organismos infecciosos como bactériase vírus;
 
-**Eosinophils:** 
+**Eosinophils:** Os eosinófilos são um dos vários glóbulos brancos que sustentam o sistema imunológico e fazem parte do sistema de defesa do seu corpo contra alérgenos além de ajudar a protegê-lo contra infecções fúngicas e parasitárias. 
+Comp: Dependendo da contagem de eosinófilos, a eosinofilia pode ser leve, moderada ou grave. Níveis elevados de eosinófilos podem indicar uma condição leve, como reação a medicamentos ou alergia, ou uma condição grave pode causar isso, incluindo algumas doenças do sangue. Um grande número de eosinófilos se aglomera em áreas específicas do corpo, causando problemas médicos ligados à inflamação que podem afetar várias áreas do corpo. 
 
-**Monocytes:**
+(https://my.clevelandclinic.org/health/diseases/17710-eosinophilia)
 
-**Basophils:**
+**Monocytes:** Os monócitos são um tipo de glóbulo branco do sistema imunológico, em que se transformam em macrófagos ou células dendríticas quando um germe ou bactéria invasora entra em seu corpo. As células matam o invasor ou alertam outras células sanguíneas para ajudar a destruí-lo e prevenir a infecção.
 
-**HLRatio:**
+(https://my.clevelandclinic.org/health/body/22110-monocytes)
 
-### Resumo dos Dados
 
-```{r}
+**Basophils:** Os basófilos são um tipo de glóbulo branco que trabalha em estreita colaboração com o sistema imunológico para defender o corpo contra alérgenos, patógenos e parasitas, em que liberam enzimas para melhorar o fluxo sanguíneo e prevenir coágulos sanguíneos.
+
+(https://my.clevelandclinic.org/health/body/23256-basophils)
+
+**HLRatio:** O HLRatio é geralmente considerada um indicador independente e robusto do nível de estresse em aves. Este parâmetro permite avaliar de forma simples a atividade do sistema imunológico e o estado de saúde individual de aves adultas e filhotes. Também permite avaliar a resposta do organismo ao estresse de curto e longo prazo induzido, entre outros, pelo ambiente envolvente, estresse social, parasitas sanguíneos ou um maior gasto energético das fêmeas durante a reprodução. 
+
+(https://bioone.org/journals/acta-ornithologica/volume-53/issue-2/00016454AO2018.53.2.001/Variation-of-Heterophil-to-Lymphocyte-Ratio-in-the-Great-Tit/10.3161/00016454AO2018.53.2.001.short#)
+
+
+## Resumo dos Dados
+
+```{r fig.align='center', fig.height=10, fig.width=15, message=FALSE, warning=FALSE}
+
 glimpse(df)
 summary(df)
 
 boxplot(df$FatScore~df$Species)
 ```
-### Variável de Interesse
 
-A variável que se deseja modelar é a FatScore.
+### **2. Variável de Interesse**
+
+A variável que se deseja modelar é a variável **discreta** FatScore.
 
 ```{r}
 
@@ -83,6 +92,10 @@ hist(df$FatScore)
 ### Espécies e número de indíviduos
 ```{r}
 cbind(table(df$Species))
+
+n_species <- length(cbind(table(df$Species)))
+
+cat("A base de dados apresenta ",n_species, " espécies distintas")
 ```
 ### Outliers
 
@@ -96,7 +109,7 @@ for (coluna in c(2:9)) {
 
 Devido as diferentes espécies em estudo, é esperado que haja variabilidade dos dados.
 
-### Levantamente de idéias 
+### Levantamento de idéias 
 
   * A variável resposta é do tipo discreta;
   * Descartamos a regressão linear lm(), devido a variável resposta não ser contínua;
@@ -119,8 +132,11 @@ df$Genero <- sapply(df$Species, extrair_primeira_palavra)
 ### Genero e número de indíviduos
 ```{r}
 cbind(table(df$Genero))
+
+n_genero <- length(cbind(table(df$Genero)))
+
+cat("Existem ",n_genero," Gêneros distintos")
 ```
-   
    
 ### Outliers
 
@@ -131,14 +147,14 @@ Criação de boxplot por genero
 par(mfrow = c(8,1))
 for (coluna in c(2:9)) {
   variavel <- names(df)[coluna]
-  boxplot(df[,coluna] ~df[,10],main = variavel)
+  boxplot(df[,coluna] ~df[,10],main = variavel, xlab = "Gênero")
 }
 
 ```
 
 Considerando o tamanho da base de dados, considera-se que haja poucos outliers (**subjetivamente**).
 
-### NAs na base?
+### **3. NAs na base?**
 
 ```{r}
 
@@ -186,12 +202,12 @@ substituir_na_pela_mediana <- function(valor) {
 
 #Substituição levando em consideração o Genero
 df$BodyMass <- ave(df$BodyMass, df$Genero, FUN = substituir_na_pela_mediana)
-
 ```
 
-### Há multicolinearidade entre as variáveis preditoras?
 
-```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+### **4. Há multicolinearidade entre as variáveis preditoras?**
+
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 pairs.panels(df[,-1])
 
 ```
@@ -204,30 +220,60 @@ Há multicolinearidade (| r | > 0,8) entre as variáveis:
   
   * "Lymphocytis" e "HLRatio, devido r = - 0,79. 
 
-### **2 Criação do Modelo**
 
-### 1° Modelo - Poisson
+### **5. Criação do Modelo**
+
+### 1° Modelo - GLM
+  * Sem incluir as variáveis "Lymphocytis" e "HLRatio" na criação do modelo
 
 ```{r}
 
 modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df)
-  
 modelo
 
 ```
+
 As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
 
 
-```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 par(mfrow = c(2,2))
 plot(modelo)
 ```
 
 #### Resíduos
 
-```{r}
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
 hist(modelo$residuals)
+hnp::hnp(modelo$residuals)
 
+```
+
+
+### 2° Modelo - GLM
+  * Sem incluir as variáveis "Lymphocytis" e "Heterophils" na criação do modelo
+
+```{r}
+
+modelo <- glm(FatScore ~ BodyMass + HLRatio + Eosinophils + Monocytes + Basophils + Genero, data = df)  
+modelo
+
+```
+
+As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
+
+
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(modelo)
+```
+
+#### Resíduos
+
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+hist(modelo$residuals)
 hnp::hnp(modelo$residuals)
 
 ```
@@ -248,9 +294,9 @@ step(modelo)
 
 ```
 _______________________________
-### 2° Modelo - Poisson
+### 3° Modelo - GLM
 
-```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 
 modelo <- glm(formula = FatScore ~ Monocytes + Genero, data = df)
 
@@ -260,19 +306,20 @@ plot(modelo)
 ```
 
 
-```{r}
-
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
 hist(modelo$residuals)
 hnp::hnp(modelo$residuals)
 
 ```
+
    
-### 3° Modelo - Poisson
-```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
+### 4° Modelo - GLM - Poisson
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 
 # Ajustando um modelo de regressão de Poisson
 #df <- df[c(-28,-82,-56),]
-modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils , data = df, family = poisson)
+modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df, family = poisson)
 
 # Visualizando os resultados
 summary(modelo)
@@ -282,23 +329,19 @@ plot(modelo)
 
 ```
 
-```{r}
-
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
 hist(modelo$residuals)
 hnp::hnp(modelo$residuals)
 
 ```
 
-### 4° Modelo -  TESTE NEGATIVE BINOMIAL
+### 5° Modelo - GLM - Gaussian
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 
-```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
-
-# Instalando e carregando o pacote MASS
-install.packages("MASS")
-library(MASS)
-
-# Ajustando um modelo de regressão de Negative Binomial
-modelo <- glm.nb(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df)
+# Ajustando um modelo de regressão de Poisson
+#df <- df[c(-28,-82,-56),]
+modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Species , data = df, family = gaussian())
 
 # Visualizando os resultados
 summary(modelo)
@@ -308,19 +351,20 @@ plot(modelo)
 
 ```
 
-```{r}
-
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
 hist(modelo$residuals)
 hnp::hnp(modelo$residuals)
 
 ```
-### 5° Modelo - Ajustando um Modelo de Regressão de Poisson Quase (QPR):
-```{r fig.align='center', fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
 
-# Ajustando um modelo de Poisson Quase (QPR)
-modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df, family = quasipoisson())
 
-# Visualizando os resultados
+### 6° Modelo -  TESTE NEGATIVE BINOMIAL
+
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+
+modelo <- glm.nb(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Species, data = df)
+
 summary(modelo)
 
 par(mfrow=c(2,2))
@@ -328,52 +372,229 @@ plot(modelo)
 
 ```
 
-```{r}
-
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
 hist(modelo$residuals)
 hnp::hnp(modelo$residuals)
+```
+
+### 7° Modelo - Ajustando um Modelo de Regressão de Poisson Quase (QPR):
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+
+modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Species, data = df, family = quasipoisson())
+
+summary(modelo)
+
+par(mfrow=c(2,2))
+plot(modelo)
 
 ```
 
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+hist(modelo$residuals)
+hnp::hnp(modelo$residuals)
+```
 
-### 6° Modelo - Geométrica
-```{r fig.align='center', fig.height=15, fig.width=15, message=FALSE, warning=FALSE}
 
-# Carregando o pacote
-#library(MASS)
-
-# Ajustando um modelo de regressão geométrica
-# Adicionando um pseudocount aos valores zero
-df$FatScore <- ifelse(df$FatScore == 0, 1, df$FatScore)
+### 8° Modelo - Geométrica
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+df_2 <- df
+df_2$FatScore <- ifelse(df_2$FatScore == 0, 1, df_2$FatScore)
 
 # Ajustando um modelo de regressão geométrica com ligação exponencial
-modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils, data = df, family = Gamma(link = "log"))
+modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Species, data = df_2, family = Gamma(link = "identity"))
 
 par(mfrow=c(2,2))
 plot(modelo)
 
 ```
 
-```{r}
-
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
 hist(modelo$residuals)
 hnp::hnp(modelo$residuals)
 
 ```
 
 
+### Multinomial
+```{r}
+
+modelo <- multinom(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils, data = df)
+modelo
+
+#par(mfrow=c(2,2))
+#plot(modelo)
+```
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+hist(modelo$residuals)
+hnp::hnp(modelo$residuals)
+
+```
+    
+  **Como esperado, será necessário dividir a base em subsets por gênero, para realizar a análise de regressão.**
+   
+_______________________
+_______________________
+    
+### **Vamos gerar um subset para cada gênero e realizar a análise de regressão**
+
+### Filtrando df de acordo com o genero
+```{r}
+head(df)
+table(df$Genero)
+
+df_actitis <- subset(df,df$Genero=="Actitis")
+head(df_actitis)
+
+df_arenaria <- subset(df,df$Genero=="Arenaria")
+head(df_arenaria)
+
+df_calidris <- subset(df,df$Genero=="Calidris")
+head(df_calidris)
+
+df_charadrius <- subset(df,df$Genero=="Charadrius")
+head(df_charadrius)
+
+df_limicola <- subset(df,df$Genero=="Limicola")
+head(df_limicola)
+
+df_limosa <- subset(df,df$Genero=="Limosa")
+head(df_limosa)
+
+df_philomachus <- subset(df,df$Genero=="Philomachus")
+head(df_philomachus)
 
 
+```
+__________________________
+
+### **Criação do Modelo**
+
+### **Gênero Actitis** - 1° Modelo - GLM
+  * Sem incluir as variáveis "Lymphocytis" e "HLRatio" na criação do modelo
+
+```{r}
+
+modelo_a1 <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils , data = df_actitis)
+modelo_a1
+
+```
+
+As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
 
 
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(modelo_a1)
+```
+
+#### Resíduos
+
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+hist(modelo_a1$residuals)
+hnp::hnp(modelo_a1$residuals)
+
+```
 
 
+### **Gênero Actitis** - 2° Modelo - GLM
+  * Sem incluir as variáveis "Lymphocytis" e "Heterophils" na criação do modelo
+
+```{r}
+
+modelo_a2 <- glm(FatScore ~ BodyMass + HLRatio + Eosinophils + Monocytes + Basophils, data = df_actitis)  
+modelo_a2
+
+```
+
+As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
 
 
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(modelo_a2)
+```
+
+#### Resíduos
+
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+hist(modelo_a2$residuals)
+hnp::hnp(modelo_a2$residuals)
+
+```
+
+### **Comparação AIC**
+```{r}
+AIC(modelo_a1,modelo_a2)
+```
+________________________
+________________________
+
+### **Gênero Limosa** - 1° Modelo - GLM
+  * Sem incluir as variáveis "Lymphocytis" e "HLRatio" na criação do modelo
+
+```{r}
+
+modelo_limosa_1 <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils , data = df_limosa)
+modelo_limosa_1
+
+```
+
+As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
 
 
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(modelo_limosa_1)
+```
+
+#### Resíduos
+
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+hist(modelo_limosa_1$residuals)
+hnp::hnp(modelo_limosa_1$residuals)
+
+```
 
 
+### **Gênero Limosa** - 2° Modelo - GLM
+  * Sem incluir as variáveis "Lymphocytis" e "Heterophils" na criação do modelo
+
+```{r}
+
+modelo_limosa_2 <- glm(FatScore ~ BodyMass + HLRatio + Eosinophils + Monocytes + Basophils, data = df_limosa)  
+modelo_limosa_2
+
+```
+
+As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
+
+
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(modelo_limosa_2)
+```
+
+#### Resíduos
+
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+hist(modelo_limosa_2$residuals)
+hnp::hnp(modelo_limosa_2$residuals)
+
+```
+
+### **Comparação AIC**
+```{r}
+AIC(modelo_limosa_1,modelo_limosa_2)
+
+```
 
 
 
