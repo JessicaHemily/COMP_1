@@ -14,10 +14,13 @@ library(MASS)
 library(dplyr)
 library(rstatix)
 library(lmtest)
-library(car)
 library(ggpubr)
-library(hnp)
 library(nnet)
+library(tidyr)
+library(car)
+library(agricolae)
+library(ExpDes.pt)
+library(hnp)
 ```
 
 ### Base de dados a ser analisada
@@ -36,7 +39,7 @@ head(df)
 
 ```
 
-### **1. Compreensão dos dados**
+## **1. Compreensão dos dados**
 
 **VARIÁVEIS**
 
@@ -72,20 +75,24 @@ Comp: Dependendo da contagem de eosinófilos, a eosinofilia pode ser leve, moder
 ## Resumo dos Dados
 
 ```{r fig.align='center', fig.height=10, fig.width=15, message=FALSE, warning=FALSE}
-
-glimpse(df)
 summary(df)
-
-boxplot(df$FatScore~df$Species)
+glimpse(df)
 ```
+
+A variável FatScore é do tipo qualitativa ordinal
+
+```{r}
+#df$FatScore <- as.character(df$FatScore)
+
+```
+
 
 ### **2. Variável de Interesse**
 
-A variável que se deseja modelar é a variável **discreta** FatScore.
+A variável que se deseja modelar é a variável contínua **HLRatio**.
 
 ```{r}
-
-hist(df$FatScore)
+hist(df$HLRatio)
 
 ```
    
@@ -98,26 +105,24 @@ n_species <- length(cbind(table(df$Species)))
 cat("A base de dados apresenta ",n_species, " espécies distintas")
 ```
 ### Outliers
-
 ```{r fig.align='center', fig.height=10, fig.width=15, message=FALSE, warning=FALSE}
 par(mfrow = c(2,4))
 for (coluna in c(2:9)) {
   variavel <- names(df)[coluna]
   boxplot(df[,coluna],main = variavel)
-}
+  }
 ```
 
 Devido as diferentes espécies em estudo, é esperado que haja variabilidade dos dados.
 
 ### Levantamento de idéias 
 
-  * A variável resposta é do tipo discreta;
-  * Descartamos a regressão linear lm(), devido a variável resposta não ser contínua;
+  * A variável resposta é do tipo contínua;
+  * Possível regressão linear lm(), devido a variável resposta ser contínua;
   * Talvez seja interessante agregar o gênero da variável "Species" (retirar a espécie da nomenclatura binomial) para a criação do moledo.
    
 ### Criar a variável "Genero" apartir da "Species"
 ```{r}
-
 # Função para extrair a primeira palavra de uma string
 extrair_primeira_palavra <- function(string) {
   palavras <- strsplit(string, " ")[[1]]
@@ -137,6 +142,77 @@ n_genero <- length(cbind(table(df$Genero)))
 
 cat("Existem ",n_genero," Gêneros distintos")
 ```
+   
+### IMAGENS - GÊNEROS
+
+#### * Actitis
+<img src="actitis.png" width="800" height="450">
+
+Fonte: https://www.wikiaves.com.br/5980138
+
+_____________________
+   
+#### * Arenaria ##########
+<img src="arenaria.png" width="800" height="450">
+
+Fonte: https://www.wikiaves.com.br/5974898
+
+_____________________
+
+#### * Calidris
+<img src="calidris.png" width="800" height="450">
+
+Fonte: https://www.wikiaves.com.br/3709422
+
+_____________________
+
+#### * Charadrius ###
+<img src="charadrius.png" width="800" height="450">
+
+Fonte: https://www.wikiaves.com.br/5981891
+
+_____________________
+
+#### * Limicola
+<img src="limicola.png" width="800" height="450">
+
+Fonte: Google.com
+
+_____________________
+
+#### * Limosa ####
+<img src="limosa.png" width="800" height="450">
+
+Fonte: https://www.wikiaves.com.br/5966121
+
+_____________________
+
+#### * Philomachus
+<img src="philomachus.png" width="800" height="450">
+
+Fonte: Google.com
+
+_____________________
+
+#### * Pluvialis ####
+<img src="pluvialis.png" width="800" height="450">
+
+Fonte: https://www.wikiaves.com.br/5972779
+
+_____________________
+
+#### * Tringa
+<img src="tringa.png" width="800" height="450">
+
+Fonte: https://www.wikiaves.com.br/5683272;
+       https://www.wikiaves.com.br/5981250
+
+_____________________
+
+#### * Vanellus
+<img src="vanellus.png" width="800" height="450">
+
+Fonte: https://www.wikiaves.com.br/5972207
    
 ### Outliers
 
@@ -205,6 +281,25 @@ df$BodyMass <- ave(df$BodyMass, df$Genero, FUN = substituir_na_pela_mediana)
 ```
 
 
+### Teste homogeneidade de Variâncias da variável HLRatio de acordo com o gênero
+```{r}
+fit <- aov(HLRatio ~ Genero,df) # Fisher-Snedecor
+anova(fit)
+
+bartlett.test(df$HLRatio ~ df$Genero,df)
+
+shapiro.test(fit$residuals) #verificar normalidade (variancias homogeneas)
+```
+
+Por meio da Distribuicao Fisher-Snedecor ao nivel de 5% de significancia, verificou-se que as médias de HLRatio são diferentes entre os gêneros, ou seja, ao menos duas médias diferem entre si.
+
+
+### Teste de Diferença Mínima Significativa (LSD) 
+```{r}
+LSD.test(fit, 'Genero', console = T, group = TRUE)
+```
+## Primeiros passos para a criação do modelo
+
 ### **4. Há multicolinearidade entre as variáveis preditoras?**
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
@@ -214,27 +309,19 @@ pairs.panels(df[,-1])
 
 Há multicolinearidade (| r | > 0,8) entre as variáveis:
 
-  * "Heterophils" e "Lymphocytis", devido r = - 0,91;
-  
-  * "Heterophils" e "HLRatio", devido r = 0,82;
-  
-  * "Lymphocytis" e "HLRatio, devido r = - 0,79. 
-
+  * "Heterophils" e "Lymphocytis", devido r = - 0,91.
 
 ### **5. Criação do Modelo**
 
-### 1° Modelo - GLM
-  * Sem incluir as variáveis "Lymphocytis" e "HLRatio" na criação do modelo
+### 1° Modelo - LM
+  * Sem incluir a variáveil "Lymphocytes" na criação do modelo
 
 ```{r}
 
-modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df)
+modelo <- lm (HLRatio ~ FatScore + BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df)
 modelo
 
 ```
-
-As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
-
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 par(mfrow = c(2,2))
@@ -244,24 +331,22 @@ plot(modelo)
 #### Resíduos
 
 ```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+summary(modelo)
+
 par(mfrow = c(1,2))
 hist(modelo$residuals)
 hnp::hnp(modelo$residuals)
 
 ```
 
-
-### 2° Modelo - GLM
-  * Sem incluir as variáveis "Lymphocytis" e "Heterophils" na criação do modelo
+### 2° Modelo - LM
+  * Sem incluir a variável "Heterophils" na criação do modelo
 
 ```{r}
-
-modelo <- glm(FatScore ~ BodyMass + HLRatio + Eosinophils + Monocytes + Basophils + Genero, data = df)  
+modelo <- lm(HLRatio ~ FatScore + Lymphocytes + BodyMass + Eosinophils + Monocytes + Basophils + Genero, data = df)  
 modelo
 
 ```
-
-As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
 
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
@@ -272,6 +357,8 @@ plot(modelo)
 #### Resíduos
 
 ```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+summary(modelo)
+
 par(mfrow = c(1,2))
 hist(modelo$residuals)
 hnp::hnp(modelo$residuals)
@@ -294,57 +381,13 @@ step(modelo)
 
 ```
 _______________________________
-### 3° Modelo - GLM
+### 3° Modelo - LM
+
+Sugerido pelo STEP(modelo)
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 
-modelo <- glm(formula = FatScore ~ Monocytes + Genero, data = df)
-
-par(mfrow=c(2,2))
-plot(modelo)
-
-```
-
-
-```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
-par(mfrow = c(1,2))
-hist(modelo$residuals)
-hnp::hnp(modelo$residuals)
-
-```
-
-   
-### 4° Modelo - GLM - Poisson
-```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
-
-# Ajustando um modelo de regressão de Poisson
-#df <- df[c(-28,-82,-56),]
-modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df, family = poisson)
-
-# Visualizando os resultados
-summary(modelo)
-
-par(mfrow=c(2,2))
-plot(modelo)
-
-```
-
-```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
-par(mfrow = c(1,2))
-hist(modelo$residuals)
-hnp::hnp(modelo$residuals)
-
-```
-
-### 5° Modelo - GLM - Gaussian
-```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
-
-# Ajustando um modelo de regressão de Poisson
-#df <- df[c(-28,-82,-56),]
-modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Species , data = df, family = gaussian())
-
-# Visualizando os resultados
-summary(modelo)
+modelo <- lm(HLRatio ~ Lymphocytes + Eosinophils + Basophils, data = df)
 
 par(mfrow=c(2,2))
 plot(modelo)
@@ -359,81 +402,22 @@ hnp::hnp(modelo$residuals)
 ```
 
 
-### 6° Modelo -  TESTE NEGATIVE BINOMIAL
-
-```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
-
-modelo <- glm.nb(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Species, data = df)
-
-summary(modelo)
-
-par(mfrow=c(2,2))
-plot(modelo)
-
-```
-
-```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
-par(mfrow = c(1,2))
-hist(modelo$residuals)
-hnp::hnp(modelo$residuals)
-```
-
-### 7° Modelo - Ajustando um Modelo de Regressão de Poisson Quase (QPR):
-```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
-
-modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Species, data = df, family = quasipoisson())
-
-summary(modelo)
-
-par(mfrow=c(2,2))
-plot(modelo)
-
-```
-
-```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
-par(mfrow = c(1,2))
-hist(modelo$residuals)
-hnp::hnp(modelo$residuals)
-```
 
 
-### 8° Modelo - Geométrica
-```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
-df_2 <- df
-df_2$FatScore <- ifelse(df_2$FatScore == 0, 1, df_2$FatScore)
-
-# Ajustando um modelo de regressão geométrica com ligação exponencial
-modelo <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Species, data = df_2, family = Gamma(link = "identity"))
-
-par(mfrow=c(2,2))
-plot(modelo)
-
-```
-
-```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
-par(mfrow = c(1,2))
-hist(modelo$residuals)
-hnp::hnp(modelo$residuals)
-
-```
 
 
-### Multinomial
+
+
+
+### **Comparação AIC**
 ```{r}
 
-modelo <- multinom(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils, data = df)
-modelo
-
-#par(mfrow=c(2,2))
-#plot(modelo)
-```
-```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
-par(mfrow = c(1,2))
-hist(modelo$residuals)
-hnp::hnp(modelo$residuals)
 
 ```
-    
+
+
+
+
   **Como esperado, será necessário dividir a base em subsets por gênero, para realizar a análise de regressão.**
    
 _______________________
@@ -443,7 +427,6 @@ _______________________
 
 ### Filtrando df de acordo com o genero
 ```{r}
-head(df)
 table(df$Genero)
 
 df_actitis <- subset(df,df$Genero=="Actitis")
@@ -467,23 +450,26 @@ head(df_limosa)
 df_philomachus <- subset(df,df$Genero=="Philomachus")
 head(df_philomachus)
 
-
 ```
 __________________________
 
 ### **Criação do Modelo**
 
-### **Gênero Actitis** - 1° Modelo - GLM
-  * Sem incluir as variáveis "Lymphocytis" e "HLRatio" na criação do modelo
+### **Gênero Actitis** - 1° Modelo - LM
+  * Sem incluir a variável "Lymphocytis" na criação do modelo
 
 ```{r}
 
-modelo_a1 <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils , data = df_actitis)
+modelo_a1 <- lm(HLRatio ~ FatScore + BodyMass + Heterophils + Eosinophils + Monocytes + Basophils , data = df_actitis)
 modelo_a1
 
-```
+summary(modelo_a1)
 
-As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
+modelo_a1 <- lm(HLRatio ~ Heterophils , data = df_actitis)
+
+summary(modelo_a1)
+
+```
 
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
@@ -506,7 +492,7 @@ hnp::hnp(modelo_a1$residuals)
 
 ```{r}
 
-modelo_a2 <- glm(FatScore ~ BodyMass + HLRatio + Eosinophils + Monocytes + Basophils, data = df_actitis)  
+modelo_a2 <- glm(HLRatio~FatScore + BodyMass + Eosinophils + Monocytes + Basophils, data = df_actitis)  
 modelo_a2
 
 ```
@@ -540,7 +526,7 @@ ________________________
 
 ```{r}
 
-modelo_limosa_1 <- glm(FatScore ~ BodyMass + Heterophils + Eosinophils + Monocytes + Basophils , data = df_limosa)
+modelo_limosa_1 <- glm(HLRatio ~ FatScore + BodyMass + Heterophils + Eosinophils + Monocytes + Basophils , data = df_limosa)
 modelo_limosa_1
 
 ```
@@ -568,7 +554,7 @@ hnp::hnp(modelo_limosa_1$residuals)
 
 ```{r}
 
-modelo_limosa_2 <- glm(FatScore ~ BodyMass + HLRatio + Eosinophils + Monocytes + Basophils, data = df_limosa)  
+modelo_limosa_2 <- glm(HLRatio ~ FatScore + BodyMass + Eosinophils + Monocytes + Basophils, data = df_limosa)  
 modelo_limosa_2
 
 ```
