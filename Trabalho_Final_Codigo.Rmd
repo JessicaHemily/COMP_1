@@ -104,6 +104,108 @@ n_species <- length(cbind(table(df$Species)))
 
 cat("A base de dados apresenta ",n_species, " espécies distintas")
 ```
+### Vamos agrupar as espécies por família
+
+* **Scolopacidae**
+
+  * *Actitis hypoleucos;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=212603
+      
+  * *Arenaria interpres;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=147431
+  
+  * *Calidris alpina;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=159047
+  
+  * *Calidris canutus;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=147433
+  
+  * *Calidris ferruginea;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=159049
+  
+  * *Calidris minuta;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=212600
+  
+  * *Calidris temminckii;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=366591#distributions
+  
+  * *Limicola falcinellus;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=212621
+  
+  * *Limosa lapponica;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=159034
+  
+  * *Philomachus pugnax;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=159046
+  
+  * *Tringa erythropus;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=159029
+  
+  * *Tringa glareola;*
+  
+      Fonte: https://www.wikiaves.com.br/wiki/macarico-de-bico-curto
+  
+  * *Tringa nebularia;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=158968
+  
+  * *Tringa ochropus;*
+  
+      Fonte: 
+  
+  * *Tringa totanus;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=158970
+
+* **Charadriidae**
+
+  * *Charadrius dubius;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=212617
+  
+  * *Charadrius hiaticula;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=212619
+  
+  * *Pluvialis squatarola;*
+  
+      Fonte: https://www.marinespecies.org/aphia.php?p=taxdetails&id=159137
+  
+  * *Vanellus vanellus;*
+  
+      Fonte: https://www.wikiaves.com.br/wiki/mexeriqueira
+      
+_________
+
+### Vamos agrupar os gêneros por família
+
+#### **Famílias:**
+  * **Charadriidai**
+    * *Charadrius sp.;*
+    * *Pluvialis sp.;* 
+    * *Vanellus sp.;* 
+    
+  * **Scolopacidae:**
+    * *Actitis sp.;* 
+    * *Arenaria sp.;* 
+    * *Limosa sp.;*
+    * *Tringa sp.;*
+    * *Calidris sp.;* 
+    * *Philomachus sp.;* 
+    * *Limicola sp;* 
+        
+
 ### Outliers
 ```{r fig.align='center', fig.height=10, fig.width=15, message=FALSE, warning=FALSE}
 par(mfrow = c(2,4))
@@ -117,9 +219,10 @@ Devido as diferentes espécies em estudo, é esperado que haja variabilidade dos
 
 ### Levantamento de idéias 
 
+   * Talvez seja interessante agregar o gênero da variável "Species" (retirar a espécie da nomenclatura binomial) para a criação do moledo;
+  * Talvez seja interessante agrupar os gêneros por família;
   * A variável resposta é do tipo contínua;
-  * Possível regressão linear lm(), devido a variável resposta ser contínua;
-  * Talvez seja interessante agregar o gênero da variável "Species" (retirar a espécie da nomenclatura binomial) para a criação do moledo.
+  * Possível regressão linear lm(), devido a variável resposta ser contínua.
    
 ### Criar a variável "Genero" apartir da "Species"
 ```{r}
@@ -133,7 +236,7 @@ extrair_primeira_palavra <- function(string) {
 df$Genero <- sapply(df$Species, extrair_primeira_palavra)
 ```
 
-   
+
 ### Genero e número de indíviduos
 ```{r}
 cbind(table(df$Genero))
@@ -141,6 +244,20 @@ cbind(table(df$Genero))
 n_genero <- length(cbind(table(df$Genero)))
 
 cat("Existem ",n_genero," Gêneros distintos")
+```
+### Criar a variável "Família" apartir da "Genero"
+```{r}
+df$Familia <- ifelse(df$Genero %in% c('Charadrius', 'Pluvialis', 'Vanellus') ,'Charadriidae','Scolopacidae')
+```
+
+### Genero e número de indíviduos
+```{r}
+cbind(table(df$Familia))
+
+n_familia <- length(cbind(table(df$Familia)))
+
+cat("Existem ",n_familia," Familias distintas")
+
 ```
    
 ### IMAGENS - GÊNEROS
@@ -223,10 +340,13 @@ Criação de boxplot por genero
 par(mfrow = c(8,1))
 for (coluna in c(2:9)) {
   variavel <- names(df)[coluna]
-  boxplot(df[,coluna] ~df[,10],main = variavel, xlab = "Gênero")
+  boxplot(df[,coluna] ~df[,10],
+          main = variavel, xlab = "Gênero")
 }
 
 ```
+
+
 
 Considerando o tamanho da base de dados, considera-se que haja poucos outliers (**subjetivamente**).
 
@@ -289,6 +409,7 @@ anova(fit)
 bartlett.test(df$HLRatio ~ df$Genero,df)
 
 shapiro.test(fit$residuals) #verificar normalidade (variancias homogeneas)
+
 ```
 
 Por meio da Distribuicao Fisher-Snedecor ao nivel de 5% de significancia, verificou-se que as médias de HLRatio são diferentes entre os gêneros, ou seja, ao menos duas médias diferem entre si.
@@ -297,7 +418,30 @@ Por meio da Distribuicao Fisher-Snedecor ao nivel de 5% de significancia, verifi
 ### Teste de Diferença Mínima Significativa (LSD) 
 ```{r}
 LSD.test(fit, 'Genero', console = T, group = TRUE)
+
 ```
+
+#### **Famílias:**
+  * **Charadriidae**
+    * *Charadrius sp.;*
+    * *Pluvialis sp.;* 
+    * *Vanellus sp.;* 
+    
+  * **Scolopacidae:**
+    * *Actitis sp.;* 
+    * *Arenaria sp.;* 
+    * *Limosa sp.;*
+    * *Tringa sp.;*
+    * *Calidris sp.;* 
+    * *Philomachus sp.;* 
+    * *Limicola sp;* 
+    
+Em relação a HLRatio, a família *Charadriidae* não apresenta diferença significativa. 
+
+A família *Scolopacidae* apresenta diferença significativa quanto a HLRatio.
+
+_________________
+
 ## Primeiros passos para a criação do modelo
 
 ### **4. Há multicolinearidade entre as variáveis preditoras?**
@@ -318,24 +462,24 @@ Há multicolinearidade (| r | > 0,8) entre as variáveis:
 
 ```{r}
 
-modelo <- lm (HLRatio ~ FatScore + BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df)
-modelo
+modelo_1 <- lm(HLRatio ~ FatScore + BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df)
+modelo_1
 
 ```
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 par(mfrow = c(2,2))
-plot(modelo)
+plot(modelo_1)
 ```
 
 #### Resíduos
 
 ```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
-summary(modelo)
+summary(modelo_1)
 
 par(mfrow = c(1,2))
-hist(modelo$residuals)
-hnp::hnp(modelo$residuals)
+hist(modelo_1$residuals)
+hnp::hnp(modelo_1$residuals)
 
 ```
 
@@ -343,34 +487,32 @@ hnp::hnp(modelo$residuals)
   * Sem incluir a variável "Heterophils" na criação do modelo
 
 ```{r}
-modelo <- lm(HLRatio ~ FatScore + Lymphocytes + BodyMass + Eosinophils + Monocytes + Basophils + Genero, data = df)  
-modelo
+modelo_2 <- lm(HLRatio ~ FatScore + Lymphocytes + BodyMass + Eosinophils + Monocytes + Basophils + Genero, data = df)  
+modelo_2
 
 ```
 
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 par(mfrow = c(2,2))
-plot(modelo)
+plot(modelo_2)
 ```
 
 #### Resíduos
 
 ```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
-summary(modelo)
+summary(modelo_2)
 
 par(mfrow = c(1,2))
-hist(modelo$residuals)
-hnp::hnp(modelo$residuals)
+hist(modelo_2$residuals)
+hnp::hnp(modelo_2$residuals)
 
 ```
 
 #### Procurar por outros modelos
 
 ```{r}
-
-step(modelo)
-
+step(modelo_1)
 #hist(modelo$residuals)
 
 #summary(modelo)
@@ -387,31 +529,49 @@ Sugerido pelo STEP(modelo)
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 
-modelo <- lm(HLRatio ~ Lymphocytes + Eosinophils + Basophils, data = df)
+modelo_3 <- lm(HLRatio ~ Heterophils + Eosinophils, data = df)
 
 par(mfrow=c(2,2))
-plot(modelo)
+plot(modelo_3)
 
 ```
 
 ```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
 par(mfrow = c(1,2))
-hist(modelo$residuals)
-hnp::hnp(modelo$residuals)
+hist(modelo_3$residuals)
+hnp::hnp(modelo_3$residuals)
+
+```
+### 4° Modelo - GLM
+  * Sem incluir a variável "Heterophils" na criação do modelo
+
+```{r}
+modelo_4 <- glm(HLRatio~FatScore + Lymphocytes  + BodyMass + Eosinophils + Monocytes + Basophils, data = df)  
+modelo_4
+
+```
+
+As variáveis "Lymphocytis" e "HLRatio" não foram incluídas no modelo devido menor relação com a variável resposta.
+
+
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(modelo_4)
+```
+
+#### Resíduos
+
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+hist(modelo_4$residuals)
+hnp::hnp(modelo_4$residuals)
 
 ```
 
 
-
-
-
-
-
-
-
 ### **Comparação AIC**
 ```{r}
-
+AIC(modelo_1,modelo_2,modelo_3,modelo_4)
 
 ```
 
@@ -423,6 +583,81 @@ hnp::hnp(modelo$residuals)
 _______________________
 _______________________
     
+### **Vamos gerar um subset para cada Família e realizar a análise de regressão**
+
+### Filtrando df de acordo com a Família
+
+```{r}
+table(df$Familia)
+
+df_Charadriidae <- subset(df,df$Familia=="Charadriidae")
+df_Scolopacidae <- subset(df,df$Familia=="Scolopacidae")
+```
+
+### **Criação do Modelo**
+
+### **Família Charadriidae** - 1° Modelo - LM
+  * Sem incluir a variável "Lymphocytis" na criação do modelo
+
+```{r}
+
+modelo_c1 <- lm(HLRatio ~ FatScore + BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero , data = df_Charadriidae)
+modelo_c1
+
+summary(modelo_c1)
+
+modelo_c1 <- lm(HLRatio ~  Heterophils + BodyMass + Genero, data = df_Charadriidae)
+
+summary(modelo_c1)
+
+```
+
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(modelo_c1)
+```
+
+#### Resíduos
+
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+hist(modelo_c1$residuals)
+hnp::hnp(modelo_c1$residuals)
+
+```
+__________________
+
+### **Família Scolopacidae** - 1° Modelo - LM
+  * Sem incluir a variável "Lymphocytis" na criação do modelo
+
+```{r}
+
+modelo_s1 <- lm(HLRatio ~ FatScore + BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero , data = df_Scolopacidae)
+modelo_s1
+
+summary(modelo_s1)
+
+modelo_c1 <- lm(HLRatio ~ Heterophils + FatScore + Eosinophils , data = df_Scolopacidae)
+
+summary(modelo_s1)
+
+```
+
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+par(mfrow = c(2,2))
+plot(modelo_s1)
+```
+
+#### Resíduos
+
+```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+par(mfrow = c(1,2))
+hist(modelo_s1$residuals)
+hnp::hnp(modelo_s1$residuals)
+
+```
+__________________
+
 ### **Vamos gerar um subset para cada gênero e realizar a análise de regressão**
 
 ### Filtrando df de acordo com o genero
