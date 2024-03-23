@@ -457,22 +457,31 @@ Há multicolinearidade (| r | > 0,8) entre as variáveis:
 
 ### **5. Criação do Modelo**
 
+RETIRADA DE OUTLIERS
+
+```{r}
+
+df_1 <- df[-c(137,271,267),]
+
+```
+
 ### 1° Modelo - LM
   * Sem incluir a variáveil "Lymphocytes" na criação do modelo
 
 ```{r}
 
-modelo_1 <- lm(HLRatio ~ FatScore + BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df)
+modelo_1 <- lm(HLRatio ~ FatScore + BodyMass + Heterophils + Eosinophils + Monocytes + Basophils + Genero, data = df_1)
 modelo_1
 
 ```
+    
+### Resíduos e adequação do modelo
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
 par(mfrow = c(2,2))
 plot(modelo_1)
 ```
 
-#### Resíduos
 
 ```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
 summary(modelo_1)
@@ -483,22 +492,60 @@ hnp::hnp(modelo_1$residuals)
 
 ```
 
+
+#### Normalidade dos Resíduos
+
+  i) Hipótese nula: Distribuição dos dados é normal   p>0,05
+  ii) Hipótese alternativa: Distribuição dos dados não é normal   p<=0,05
+  
+```{r}
+shapiro.test(modelo_1$residuals)
+
+```
+
+#### Outliers do Resíduos
+
+```{r}
+summary(rstandard(modelo_1))
+
+```
+
+Há outliers, devido ao intervalo NÃO pertencer a [-3, 3] (valores padronizados).
+
+#### Homocedasticidade
+
+  i) Hipótese nula: Há Homocedasticidade    p>0,05
+  ii) Hipótese alternativa: Não há Homocedasticidade    p<=0,05
+
+```{r}
+bptest(modelo_1)
+```
+NÃO há homocedasticidade.
+
+### Conclusão para o modelo
+  
+  Como os resíduos não seguem uma distribuição normal, não há homocedasticidade e há outliers do resíduos, este não é um bom modelo.
+  
+___________________
+
 ### 2° Modelo - LM
   * Sem incluir a variável "Heterophils" na criação do modelo
 
 ```{r}
-modelo_2 <- lm(HLRatio ~ FatScore + Lymphocytes + BodyMass + Eosinophils + Monocytes + Basophils + Genero, data = df)  
+df_2 <- df
+
+modelo_2 <- lm(HLRatio ~ FatScore + Lymphocytes + BodyMass + Eosinophils + Monocytes + Basophils + Genero, data = df_2)  
 modelo_2
 
 ```
 
+### Resíduos e adequação do modelo
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
-par(mfrow = c(2,2))
+par(mfrow=c(2,2))
 plot(modelo_2)
 ```
 
-#### Resíduos
 
 ```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
 summary(modelo_2)
@@ -508,6 +555,43 @@ hist(modelo_2$residuals)
 hnp::hnp(modelo_2$residuals)
 
 ```
+
+
+#### Normalidade dos Resíduos
+
+  i) Hipótese nula: Distribuição dos dados é normal   p>0,05
+  ii) Hipótese alternativa: Distribuição dos dados não é normal   p<=0,05
+  
+```{r}
+shapiro.test(modelo_2$residuals)
+
+```
+Distribuição dos resíduos não é normal.
+
+#### Outliers do Resíduos
+
+```{r}
+summary(rstandard(modelo_2))
+
+```
+
+Há outliers, devido ao intervalo NÃO pertencer a [-3, 3] (valores padronizados).
+
+#### Homocedasticidade
+
+  i) Hipótese nula: Há Homocedasticidade    p>0,05
+  ii) Hipótese alternativa: Não há Homocedasticidade    p<=0,05
+
+```{r}
+bptest(modelo_2)
+```
+NÃO há homocedasticidade.
+
+### Conclusão para o modelo
+  
+  Como os resíduos não seguem uma distribuição normal, não há homocedasticidade e há outliers do resíduos, este não é um bom modelo.
+  
+___________________
 
 #### Procurar por outros modelos
 
@@ -528,25 +612,75 @@ _______________________________
 Sugerido pelo STEP(modelo)
 
 ```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+df_3 <- df
 
-modelo_3 <- lm(HLRatio ~ Heterophils + Eosinophils, data = df)
-
-par(mfrow=c(2,2))
-plot(modelo_3)
+modelo_3 <- lm(HLRatio ~ Heterophils + Eosinophils, data = df_3)
 
 ```
+   
+### Resíduos e adequação do modelo
+
+```{r fig.align='center', fig.height=7, fig.width=7, message=FALSE, warning=FALSE}
+par(mfrow=c(2,2))
+plot(modelo_3)
+```
+
 
 ```{r fig.align='center', fig.height=5, fig.width=12, message=FALSE, warning=FALSE}
+summary(modelo_3)
+
 par(mfrow = c(1,2))
 hist(modelo_3$residuals)
 hnp::hnp(modelo_3$residuals)
 
 ```
+
+
+#### Normalidade dos Resíduos
+
+  i) Hipótese nula: Distribuição dos dados é normal   p>0,05
+  ii) Hipótese alternativa: Distribuição dos dados não é normal   p<=0,05
+  
+```{r}
+shapiro.test(modelo_1$residuals)
+
+```
+Distribuição dos resíduos não é normal.
+
+#### Outliers do Resíduos
+
+```{r}
+summary(rstandard(modelo_3))
+
+```
+
+Há outliers, devido ao intervalo NÃO pertencer a [-3, 3] (valores padronizados).
+
+#### Homocedasticidade
+
+  i) Hipótese nula: Há Homocedasticidade    p>0,05
+  ii) Hipótese alternativa: Não há Homocedasticidade    p<=0,05
+
+```{r}
+bptest(modelo_3)
+```
+Não há homocedasticidade.
+
+### Conclusão para o modelo
+  
+  Como os resíduos não seguem uma distribuição normal, não há homocedasticidade e há outliers do resíduos, este não é um bom modelo.
+  
+___________________
+
+
+
 ### 4° Modelo - GLM
   * Sem incluir a variável "Heterophils" na criação do modelo
 
 ```{r}
-modelo_4 <- glm(HLRatio~FatScore + Lymphocytes  + BodyMass + Eosinophils + Monocytes + Basophils, data = df)  
+df_4 <- df
+
+modelo_4 <- glm(HLRatio~FatScore + Lymphocytes  + BodyMass + Eosinophils + Monocytes + Basophils, data = df_4)  
 modelo_4
 
 ```
